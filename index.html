@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>iPhone Repair 4 Less — Request a Quote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#0f0f0f,#1f1f1f);color:#fff;margin:0}
+    header{padding:30px 20px;text-align:center;background:#000}
+    header h1{margin:0;font-size:28px}
+    header p{color:#ccc;margin-top:8px}
+    .container{max-width:560px;margin:30px auto;background:#111;padding:25px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+    .badge{background:#00e5ff;color:#000;padding:6px 12px;border-radius:20px;font-size:12px;display:inline-block;margin-bottom:15px;font-weight:700}
+    h2{margin-top:0;font-size:22px}
+    input,select,textarea,button{width:100%;padding:12px;margin-top:10px;border-radius:6px;border:none;font-size:15px}
+    input,select,textarea{background:#222;color:#fff}
+    button{background:#00e5ff;color:#000;font-weight:700;margin-top:18px;cursor:pointer}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+    .coupon{margin-top:18px;padding:15px;background:#1a1a1a;border:1px dashed #00e5ff;border-radius:8px;text-align:center;display:none}
+    .coupon strong{font-size:20px;display:block;margin-top:5px}
+    .fineprint{font-size:12px;color:#aaa;margin-top:15px;text-align:center}
+    .status{margin-top:12px;font-size:13px;color:#bbb;min-height:18px}
+    a{color:#00e5ff}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📱 iPhone Repair 4 Less</h1>
+    <p>Fast • Affordable • No BS Repairs</p>
+  </header>
+
+  <div class="container">
+    <span class="badge">🔥 10% OFF FIRST REPAIR</span>
+    <h2>Request a Free Quote</h2>
+
+    <input id="name" placeholder="Full Name *" autocomplete="name" />
+    <input id="phone" placeholder="Mobile Number *" autocomplete="tel" />
+
+    <select id="model">
+      <option value="">Select iPhone Model *</option>
+      <option>iPhone 6 / 6 Plus</option>
+      <option>iPhone 6s / 6s Plus</option>
+      <option>iPhone 7 / 7 Plus</option>
+      <option>iPhone 8 / 8 Plus</option>
+      <option>iPhone X</option>
+      <option>iPhone XR</option>
+      <option>iPhone XS / XS Max</option>
+      <option>iPhone 11</option>
+      <option>iPhone 11 Pro / Pro Max</option>
+      <option>iPhone 12 mini</option>
+      <option>iPhone 12</option>
+      <option>iPhone 12 Pro / Pro Max</option>
+      <option>iPhone 13 mini</option>
+      <option>iPhone 13</option>
+      <option>iPhone 13 Pro / Pro Max</option>
+      <option>iPhone 14</option>
+      <option>iPhone 14 Plus</option>
+      <option>iPhone 14 Pro / Pro Max</option>
+      <option>iPhone 15</option>
+      <option>iPhone 15 Plus</option>
+      <option>iPhone 15 Pro / Pro Max</option>
+    </select>
+
+    <div class="row">
+      <select id="service">
+        <option value="">Service Needed (optional)</option>
+        <option>Back Glass</option>
+        <option>Screen</option>
+        <option>Battery</option>
+        <option>Charging Port</option>
+        <option>Camera</option>
+        <option>Speaker/Mic</option>
+        <option>Diagnostic / Other</option>
+      </select>
+      <select id="color">
+        <option value="">Color (optional)</option>
+        <option>Black</option>
+        <option>White</option>
+        <option>Blue</option>
+        <option>Green</option>
+        <option>Red</option>
+        <option>Purple</option>
+        <option>Gold</option>
+        <option>Graphite</option>
+        <option>Silver</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <textarea id="issue" rows="3" placeholder="Describe the problem (optional)"></textarea>
+
+    <label style="display:block;margin-top:10px;font-size:13px;color:#bbb;">
+      <input id="consent" type="checkbox" style="width:auto;margin-right:8px;"> I agree to be contacted by text/call about my quote.
+    </label>
+
+    <button id="btn" onclick="submitQuote()">Get My Quote</button>
+    <div class="status" id="status"></div>
+
+    <div class="coupon" id="coupon">
+      🎉 You’re locked in!
+      <strong>10% OFF</strong>
+      Use code <strong>FIRST10</strong>
+    </div>
+
+    <div class="fineprint">
+      Coupon valid for first-time customers only. One per device.
+    </div>
+  </div>
+
+  <script>
+    // ========= CONFIG (YOU MUST SET THESE) =========
+    // 1) Deploy the Apps Script as a Web App (doPost) and paste the /exec URL below.
+    // 2) If you have an inventory system webhook, paste it below; otherwise leave blank.
+    const CONFIG = {
+      appsScriptWebAppUrl: "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE",
+      inventoryWebhookUrl: "" // optional: "https://your-inventory-system.com/webhook/quote"
+    };
+
+    // Local fallback storage (kept as backup)
+    function storeLocal(lead) {
+      let leads = JSON.parse(localStorage.getItem('quoteLeads')) || [];
+      leads.push(lead);
+      localStorage.setItem('quoteLeads', JSON.stringify(leads));
+    }
+
+    async function submitQuote() {
+      const statusEl = document.getElementById('status');
+      const btn = document.getElementById('btn');
+      statusEl.textContent = "";
+
+      if (!name.value || !phone.value || !model.value) {
+        alert('Please complete required fields');
+        return;
+      }
+      if (!consent.checked) {
+        alert('Please check consent so we can contact you about your quote');
+        return;
+      }
+
+      const lead = {
+        business: "iPhone Repair 4 Less",
+        coupon: "FIRST10",
+        name: name.value.trim(),
+        phone: phone.value.trim(),
+        model: model.value,
+        service: service.value,
+        color: color.value,
+        issue: issue.value.trim(),
+        source: "request-a-quote",
+        submittedAt: new Date().toISOString()
+      };
+
+      // Always keep a local backup
+      storeLocal(lead);
+
+      // Show coupon immediately (conversion)
+      document.getElementById('coupon').style.display = 'block';
+
+      // If no Apps Script URL is configured, stop here (honest + safe)
+      if (!CONFIG.appsScriptWebAppUrl || CONFIG.appsScriptWebAppUrl.includes("PASTE_YOUR")) {
+        statusEl.textContent = "Saved locally. To send to Google Sheets, paste your Apps Script Web App URL in CONFIG.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+
+      try {
+        // Send lead to Google Sheets via Apps Script
+        const res = await fetch(CONFIG.appsScriptWebAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lead)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok !== true) {
+          throw new Error(data.error || 'Sheets submission failed');
+        }
+
+        // Optional: forward to inventory system (webhook)
+        if (CONFIG.inventoryWebhookUrl) {
+          await fetch(CONFIG.inventoryWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'QUOTE_REQUEST', lead })
+          }).catch(() => {});
+        }
+
+        statusEl.textContent = "Submitted successfully. We'll text you soon.";
+      } catch (e) {
+        statusEl.textContent = "Saved locally, but cloud submit failed: " + (e?.message || e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Get My Quote";
+      }
+    }
+  </script>
+
+  <!--
+  =========================
+  GOOGLE APPS SCRIPT (Server)
+  =========================
+  Create a new Apps Script project, paste the code below into Code.gs, then:
+  Deploy → New deployment → Web app → Execute as: Me → Who has access: Anyone
+  Copy the Web app URL (/exec) into CONFIG.appsScriptWebAppUrl above.
+
+  -------- Code.gs --------
+
+  const SHEET_NAME = 'Quote Leads';
+
+  function doPost(e) {
+    try {
+      const payload = JSON.parse(e.postData.contents || '{}');
+      if (!payload.phone || !payload.model || !payload.name) {
+        return json_({ ok:false, error:'Missing required fields' }, 400);
+      }
+
+      const ss = SpreadsheetApp.getActive();
+      const sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+
+      // Header row (created once)
+      if (sh.getLastRow() === 0) {
+        sh.appendRow([
+          'Submitted At (ISO)', 'Name', 'Phone', 'Model', 'Service', 'Color', 'Issue',
+          'Coupon', 'Source', 'Business'
+        ]);
+      }
+
+      sh.appendRow([
+        payload.submittedAt || new Date().toISOString(),
+        payload.name || '',
+        payload.phone || '',
+        payload.model || '',
+        payload.service || '',
+        payload.color || '',
+        payload.issue || '',
+        payload.coupon || '',
+        payload.source || '',
+        payload.business || ''
+      ]);
+
+      // OPTIONAL INVENTORY HOOK (server-side)
+      // If your inventory system has an API endpoint, call it here.
+      // Example:
+      // UrlFetchApp.fetch('https://YOUR_INVENTORY_WEBHOOK', {
+      //   method: 'post',
+      //   contentType: 'application/json',
+      //   payload: JSON.stringify({ type:'QUOTE_REQUEST', lead: payload })
+      // });
+
+      return json_({ ok:true }, 200);
+    } catch (err) {
+      return json_({ ok:false, error: String(err) }, 500);
+    }
+  }
+
+  function json_(obj, code) {
+    return ContentService
+      .createTextOutput(JSON.stringify(obj))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  */
+  -->
+</body>
+</html>
